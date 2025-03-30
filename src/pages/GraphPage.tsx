@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { useGetDataMutation } from "../entities/graphApi";
+import GraphViewer from "../widgets/GraphViewer";
 
 const GraphPage: React.FC = () => {
     const [getData] = useGetDataMutation();
@@ -9,7 +10,7 @@ const GraphPage: React.FC = () => {
     }, [])
 
     return (
-        <>куку</>
+        <GraphViewer />
     )
 }
 

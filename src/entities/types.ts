@@ -1,10 +1,12 @@
+import { SimulationLinkDatum, SimulationNodeDatum } from "d3-force"
+
 export interface IToken {
     name: string,
     amount: number,
     usdt_amount: number
 }
 
-export interface INode {
+export interface IGraphNode extends SimulationNodeDatum {
     id: string,
     type: string,
     name: string,
@@ -12,11 +14,19 @@ export interface INode {
     tokens: IToken[]
 }
 
-export interface ILink {
+export interface ILinkFromApi {
     id: string,
     sender: string,
     receiver: string,
-    usdt_umount: number,
+    usdt_amount: number,
+    tokens_amount: IToken[]
+}
+
+export interface IGraphLink extends SimulationLinkDatum<IGraphNode> {
+    label: string,
+    source: IGraphNode | string,
+    target: IGraphNode | string,
+    usdt_amount: number,
     tokens_amount: IToken[]
 }
 
@@ -26,12 +36,14 @@ export interface IError {
 }
 
 export interface GraphState {
-    nodes: INode[];
-    links: ILink[];
+    data: {
+        nodes: IGraphNode[],
+        links: IGraphLink[],
+    },
     error: IError
 }
 
 export interface IGetDataResponse {
-    nodes: INode[],
-    links: ILink[]
+    nodes: IGraphNode[],
+    links: ILinkFromApi[]
 }

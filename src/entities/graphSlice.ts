@@ -4,8 +4,10 @@ import { graphApi } from "./graphApi";
 
 
 const initialState: GraphState = {
-    nodes: [],
-    links: [],
+    data: {
+        nodes: [],
+        links: [],
+    },
     error: {
         errorStatus: false,
         errorMessage: null
@@ -23,8 +25,14 @@ const graphSlice = createSlice({
                 state.error.errorMessage = null;
             })
             .addMatcher(graphApi.endpoints.getData.matchFulfilled, (state, action: PayloadAction<IGetDataResponse>) => {
-                state.nodes = action.payload.nodes;
-                state.links = action.payload.links;
+                state.data.nodes = [...state.data.nodes, ...action.payload.nodes];
+                const formattedLinks = action.payload.links.map(({ sender, receiver, id, ...rest }) => ({
+                    ...rest,
+                    source: sender,
+                    target: receiver,
+                    label: id
+                }));
+                state.data.links = [...state.data.links, ...formattedLinks]
             })
             .addMatcher(graphApi.endpoints.getData.matchRejected, (state) => {
                 state.error.errorStatus = true;
