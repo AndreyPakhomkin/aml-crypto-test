@@ -11,7 +11,9 @@ export interface IGraphNode extends SimulationNodeDatum {
     type: string,
     name: string,
     usdt_balance: number,
-    tokens: IToken[]
+    tokens: IToken[],
+    x: number,
+    y: number
 }
 
 export interface ILinkFromApi {
