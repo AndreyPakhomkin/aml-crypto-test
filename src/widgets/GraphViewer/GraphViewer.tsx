@@ -2,29 +2,57 @@ import React, { useEffect, useMemo, useRef } from "react";
 import { IGraphLink, IGraphNode } from "../../entities/types";
 import { useAppSelector } from "../../shared/hooks/storeHooks";
 import { simulation } from "../simulation";
-import { forceCenter, forceCollide, forceLink, forceManyBody, forceX, forceY } from "d3-force";
+import { forceLink } from "d3-force";
 import { drag, D3DragEvent } from "d3-drag";
 import { select } from "d3-selection";
-import { createRoot } from "react-dom/client";
-import GraphNode from "../../shared/ui/GraphNode/GraphNode";
 import "./GraphViewer.scss";
 import AdressInput from "../../shared/ui/AdressInput/AdressInput";
 
 const GraphViewer: React.FC = () => {
     const width = 1440;
     const height = 720;
-    const startRadius = 100;
 
     const { nodes, links } = useAppSelector((state) => state.storedData.data)
     const svgRef = useRef<SVGSVGElement>(null);
 
-    const mutableNodes = useMemo(() =>
-        nodes.map((node) => ({
-            ...node,
-            x: (Math.random() - 0.5) * 10,
-            y: (Math.random() - 0.5) * 10
-        })),
-        [nodes]);
+    const existingNodes = useRef(new Map<IGraphNode["id"], IGraphNode>());
+
+    const mutableNodes = useMemo(() => {
+        return nodes.map((node) => {
+            if (existingNodes.current.has(node.id)) {
+                return existingNodes.current.get(node.id)!;
+            }
+
+            const relatedLinks = links.filter(link => link.source === node.id || link.target === node.id);
+
+            const mainNode = relatedLinks
+                .map(link => existingNodes.current.get(link.source as string) ?? existingNodes.current.get(link.target as string))
+                .find(Boolean);
+
+            let x = (Math.random() - 0.5) * 10;
+            let y = (Math.random() - 0.5) * 10;
+
+            if (mainNode) {
+                let incoming = 0, outgoing = 0;
+
+                relatedLinks.forEach(link => {
+                    const tokensSum = (link.tokens_amount || []).reduce((sum, token) => sum + (token.usdt_amount || 0), 0);
+                    const totalAmount = (link.usdt_amount || 0) + tokensSum;
+
+                    if (link.target === node.id) incoming += totalAmount;
+                    if (link.source === node.id) outgoing += totalAmount;
+                });
+
+                x = mainNode.x! + (incoming >= outgoing ? 100 : -100);
+                y = mainNode.y! + (Math.random() - 0.5) * 50;
+            }
+
+            const newNode = { ...node, x, y };
+            existingNodes.current.set(node.id, newNode);
+            return newNode;
+        });
+    }, [nodes, links]);
+
 
     const filledLinks = useMemo(() => {
         const nodesMap = new Map(mutableNodes.map((node) => [node.id, node]));
@@ -32,7 +60,7 @@ const GraphViewer: React.FC = () => {
         return links.map((link) => ({
             source: nodesMap.get(link.source as string)!,
             target: nodesMap.get(link.target as string)!,
-            strength: -100,
+            strength: -50,
             label: link.label,
             usdt_amount: link.usdt_amount,
             tokens_amount: link.tokens_amount
@@ -50,14 +78,9 @@ const GraphViewer: React.FC = () => {
 
         simulation
             .nodes(mutableNodes)
-            .force("link",
-                forceLink<IGraphNode, IGraphLink>(filledLinks)
-                    .id((d) => d.id)
-                    .distance(100)
-            )
-            .force("collide", forceCollide(startRadius * 0.1))
-            .force("center", forceCenter(0, 0).strength(0.01))
-        // .alphaDecay(0.5);
+            .force("link", forceLink<IGraphNode, IGraphLink>(filledLinks).id((d) => d.id).distance(150))
+            .alpha(0.2)
+            .restart();
 
         const svg = select(svgRef.current);
 
