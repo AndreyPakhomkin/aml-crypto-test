@@ -7,13 +7,15 @@ import { drag, D3DragEvent } from "d3-drag";
 import { select } from "d3-selection";
 import "./GraphViewer.scss";
 import AdressInput from "../../shared/ui/AdressInput/AdressInput";
+import { zoom, zoomIdentity, ZoomBehavior } from "d3-zoom";
 
 const GraphViewer: React.FC = () => {
     const width = 1440;
     const height = 720;
 
-    const { nodes, links } = useAppSelector((state) => state.storedData.data)
+    const { nodes, links } = useAppSelector((state) => state.storedData.data);
     const svgRef = useRef<SVGSVGElement>(null);
+    const groupRef = useRef<SVGGElement>(null);
 
     const existingNodes = useRef(new Map<IGraphNode["id"], IGraphNode>());
 
@@ -65,16 +67,26 @@ const GraphViewer: React.FC = () => {
             usdt_amount: link.usdt_amount,
             tokens_amount: link.tokens_amount
         }));
-    }, [nodes, links])
+    }, [nodes, links]);
 
     useEffect(() => {
         simulation.nodes(mutableNodes);
-        console.log(nodes)
     }, [nodes]);
 
-
     useEffect(() => {
-        if (!svgRef.current) return;
+        if (!svgRef.current || !groupRef.current) return;
+
+        const svg = select(svgRef.current);
+        const g = select(groupRef.current);
+
+        const zoomBehavior: ZoomBehavior<SVGSVGElement, unknown> = zoom<SVGSVGElement, unknown>()
+            .extent([[0, 0], [width, height]])
+            .scaleExtent([0.1, 5])
+            .on("zoom", (event) => {
+                g.attr("transform", event.transform);
+            });
+
+        svg.call(zoomBehavior);
 
         simulation
             .nodes(mutableNodes)
@@ -82,15 +94,13 @@ const GraphViewer: React.FC = () => {
             .alpha(0.2)
             .restart();
 
-        const svg = select(svgRef.current);
-
-        const linkSelection = svg
+        const linkSelection = g
             .selectAll<SVGLineElement, IGraphLink>("line")
             .data(filledLinks)
             .join("line")
             .classed("link-line", true);
 
-        const nodesSelection = svg
+        const nodesSelection = g
             .selectAll<SVGCircleElement, IGraphNode>("circle")
             .data(mutableNodes)
             .join("circle")
@@ -115,31 +125,38 @@ const GraphViewer: React.FC = () => {
                 .attr("cy", (d) => d.y!);
         });
 
-    }, [nodes, filledLinks])
+    }, [nodes, filledLinks]);
 
     const dragStarted = (event: D3DragEvent<SVGCircleElement, IGraphNode, IGraphNode>) => {
         if (!event.active) simulation.alphaTarget(0.3).restart();
         event.subject.fx = event.subject.x;
         event.subject.fy = event.subject.y;
-    }
+    };
 
     const dragged = (event: D3DragEvent<SVGCircleElement, IGraphNode, IGraphNode>) => {
         event.subject.fx = event.x;
         event.subject.fy = event.y;
-    }
+    };
 
     const dragEnded = (event: D3DragEvent<SVGCircleElement, IGraphNode, IGraphNode>) => {
         if (!event.active) simulation.alphaTarget(0);
         event.subject.fx = null;
         event.subject.fy = null;
-    }
+    };
 
     return (
         <div className="page-container">
-            <svg width={width} height={height} ref={svgRef} viewBox={`${-width / 2} ${-height / 2} ${width} ${height}`}></svg>
+            <svg
+                width={width}
+                height={height}
+                ref={svgRef}
+                viewBox={`${-width / 2} ${-height / 2} ${width} ${height}`}
+            >
+                <g ref={groupRef}></g>
+            </svg>
             <AdressInput />
         </div>
-    )
-}
+    );
+};
 
-export default GraphViewer
+export default GraphViewer;
