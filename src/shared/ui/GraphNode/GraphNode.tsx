@@ -1,4 +1,4 @@
-import { IGraphNode } from "../../entities/types";
+import { IGraphNode } from "../../../entities/types";
 import "./GraphNode.scss";
 
 // interface INodeProps {

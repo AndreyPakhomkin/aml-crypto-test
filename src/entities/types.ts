@@ -49,3 +49,7 @@ export interface IGetDataResponse {
     nodes: IGraphNode[],
     links: ILinkFromApi[]
 }
+
+export interface IGetDataParams {
+    adress: string
+}

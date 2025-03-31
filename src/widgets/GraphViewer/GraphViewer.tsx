@@ -2,27 +2,27 @@ import React, { useEffect, useMemo, useRef } from "react";
 import { IGraphLink, IGraphNode } from "../../entities/types";
 import { useAppSelector } from "../../shared/hooks/storeHooks";
 import { simulation } from "../simulation";
-import { forceCenter, forceCollide, forceLink } from "d3-force";
+import { forceCenter, forceCollide, forceLink, forceManyBody, forceX, forceY } from "d3-force";
 import { drag, D3DragEvent } from "d3-drag";
 import { select } from "d3-selection";
 import { createRoot } from "react-dom/client";
-import GraphNode from "../../shared/ui/GraphNode";
+import GraphNode from "../../shared/ui/GraphNode/GraphNode";
 import "./GraphViewer.scss";
+import AdressInput from "../../shared/ui/AdressInput/AdressInput";
 
 const GraphViewer: React.FC = () => {
-    const width = 720;
+    const width = 1440;
     const height = 720;
-    const center = { x: width / 2, y: height / 2 };
-    const startRadius = 30;
+    const startRadius = 100;
 
     const { nodes, links } = useAppSelector((state) => state.storedData.data)
     const svgRef = useRef<SVGSVGElement>(null);
 
     const mutableNodes = useMemo(() =>
-        nodes.map((node, i) => ({
+        nodes.map((node) => ({
             ...node,
-            x: center.x + (Math.random() - 0.5) * 10,
-            y: center.y + (Math.random() - 0.5) * 10
+            x: (Math.random() - 0.5) * 10,
+            y: (Math.random() - 0.5) * 10
         })),
         [nodes]);
 
@@ -41,7 +41,9 @@ const GraphViewer: React.FC = () => {
 
     useEffect(() => {
         simulation.nodes(mutableNodes);
+        console.log(nodes)
     }, [nodes]);
+
 
     useEffect(() => {
         if (!svgRef.current) return;
@@ -51,11 +53,11 @@ const GraphViewer: React.FC = () => {
             .force("link",
                 forceLink<IGraphNode, IGraphLink>(filledLinks)
                     .id((d) => d.id)
-                    .distance(70)
+                    .distance(100)
             )
             .force("collide", forceCollide(startRadius * 0.1))
-            .force("center", forceCenter(center.x, center.y).strength(0.01))
-            .alphaDecay(0.02);
+            .force("center", forceCenter(0, 0).strength(0.01))
+        // .alphaDecay(0.5);
 
         const svg = select(svgRef.current);
 
@@ -110,8 +112,9 @@ const GraphViewer: React.FC = () => {
     }
 
     return (
-        <div className="container">
-            <svg width={width} height={height} ref={svgRef}></svg>
+        <div className="page-container">
+            <svg width={width} height={height} ref={svgRef} viewBox={`${-width / 2} ${-height / 2} ${width} ${height}`}></svg>
+            <AdressInput />
         </div>
     )
 }

@@ -8,11 +8,14 @@ svg {
     z-index: 2;
 }
 
-.container {
+.page-container {
     width: 100%;
-    min-width: 720px;
     display: flex;
+    flex-direction: column;
     justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 15px;
 }
 
 .node-circle {
