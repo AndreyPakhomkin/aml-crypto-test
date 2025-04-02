@@ -42,7 +42,8 @@ export interface GraphState {
         nodes: IGraphNode[],
         links: IGraphLink[],
     },
-    error: IError
+    error: IError,
+    selectedNodeId: string
 }
 
 export interface IGetDataResponse {

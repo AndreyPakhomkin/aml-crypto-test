@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import GraphViewer from "../widgets/GraphViewer/GraphViewer";
 
 const GraphPage: React.FC = () => {

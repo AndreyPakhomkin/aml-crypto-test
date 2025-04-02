@@ -11,13 +11,20 @@ const initialState: GraphState = {
     error: {
         errorStatus: false,
         errorMessage: null
-    }
+    },
+    selectedNodeId: ''
 };
 
 const graphSlice = createSlice({
     name: "graph",
     initialState,
-    reducers: {},
+    reducers: {
+        setSelectedNodeId: (state, action: PayloadAction<string>) => {
+            console.log('Reducer setSelectedNodeId called with:', action.payload);
+            state.selectedNodeId = action.payload;
+            console.log('New selectedNodeId in state:', state.selectedNodeId);
+        }
+    },
     extraReducers: (builder) => {
         builder
             .addMatcher(graphApi.endpoints.getData.matchPending, (state) => {
@@ -49,4 +56,5 @@ const graphSlice = createSlice({
     },
 });
 
+export const { setSelectedNodeId } = graphSlice.actions;
 export default graphSlice.reducer;
