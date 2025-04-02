@@ -1,11 +1,7 @@
-$node-fill: lightblue;
-$link-color: #333;
-
 svg {
     border: 1px solid #eeeeee;
     background: #f9f9f9;
     overflow: hidden;
-    z-index: 2;
 }
 
 .page-container {
@@ -18,13 +14,35 @@ svg {
     margin-top: 15px;
 }
 
-.node-circle {
-    r: 8px;
-    fill: #005f87;
-    stroke: #333;
+.node {
+    font-size: 10px;
+    width: 120px;
+    height: 55px;
+    padding: 5px;
+    background-color: rgb(66, 139, 212);
+    border: 1px solid rgb(25, 118, 210);
+    border-radius: 4px;
+    color: aliceblue;
+    text-align: center;
+
+    :hover {
+        cursor: pointer;
+    }
+
+    :focus {
+        outline: none !important;
+        -webkit-focus-ring-color: none;
+    }
 }
 
 .link-line {
-    stroke-width: 1px;
-    stroke: gray;
+    stroke-width: 2px;
+    stroke: rgb(128, 128, 128);
+}
+
+.link-label {
+    fill: rgba(128, 128, 128, 0.7);
+    text-anchor: middle;
+    font-size: 10px;
+    fill: rgba(128, 128, 128, 0.7);
 }

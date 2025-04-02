@@ -1,4 +1,6 @@
-.graph-node {
-    width: fit-content;
-    // background-color: aqua;
+.node-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }

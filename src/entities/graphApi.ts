@@ -4,7 +4,7 @@ import { IGetDataResponse, IGetDataParams } from './types';
 export const graphApi = createApi({
     reducerPath: 'graphApi',
     baseQuery: fetchBaseQuery({ baseUrl: 'http://localhost:3000/' }),
-    keepUnusedDataFor: 0,
+    keepUnusedDataFor: 30,
     endpoints: (builder) => ({
         getData: builder.mutation<IGetDataResponse, IGetDataParams>({
             query: ({ adress }) => ({
