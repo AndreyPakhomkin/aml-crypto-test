@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { IGraphNode } from "../../entities/types";
 import { useAppSelector } from "../../shared/hooks/storeHooks";
 import { zoom, ZoomBehavior } from "d3-zoom";
@@ -19,6 +19,8 @@ const GraphViewer: React.FC = () => {
     const existingNodes = useRef(new Map<IGraphNode["id"], IGraphNode>());
 
     const mutableNodes = useMemo(() => {
+
+        console.log(1, existingNodes)
         return calcNodePositions({
             nodes,
             existingNodes: existingNodes.current,
@@ -43,10 +45,27 @@ const GraphViewer: React.FC = () => {
         }));
     }, [nodes, links, mutableNodes]);
 
-    const { groupRef } = useGraphSimulation({
+    const { groupRef, simulationNodes } = useGraphSimulation({
         nodes: mutableNodes,
         links: filledLinks
     });
+
+    const updateExistingNodesFromSimulation = useCallback(() => {
+        if (simulationNodes) {
+            simulationNodes.forEach(simNode => {
+                const existingNode = existingNodes.current.get(simNode.id);
+                if (existingNode) {
+                    existingNodes.current.set(simNode.id, {
+                        ...existingNode,
+                        x: simNode.x,
+                        y: simNode.y,
+                        fx: simNode.x,
+                        fy: simNode.y
+                    });
+                }
+            });
+        }
+    }, [simulationNodes, existingNodes]);
 
     useEffect(() => {
         if (!svgRef.current || !groupRef.current) return;
@@ -77,7 +96,7 @@ const GraphViewer: React.FC = () => {
             >
                 <g ref={groupRef}></g>
             </svg>
-            <Tools />
+            <Tools updateNodes={updateExistingNodesFromSimulation} />
         </div>
     );
 };

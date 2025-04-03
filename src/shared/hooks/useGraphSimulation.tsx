@@ -65,6 +65,8 @@ const useGraphSimulation = ({ nodes, links }: UseGraphSimulationProps) => {
             .join("foreignObject")
             .classed("node", true)
             .attr("style", (d) => `background-color: ${typeToColor[d.type] || "gray"}`)
+            .attr("cx", d => d.x)
+            .attr("cy", d => d.y)
             .on("click", function (event, d: IGraphNode) {
                 dispatch(setSelectedNodeId(d.id));
             })
@@ -115,7 +117,7 @@ const useGraphSimulation = ({ nodes, links }: UseGraphSimulationProps) => {
         });
     }, [nodes, links, simulation]);
 
-    return { groupRef };
+    return { groupRef, simulationNodes: nodes };
 };
 
 export default useGraphSimulation;
