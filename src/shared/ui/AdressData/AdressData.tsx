@@ -2,6 +2,7 @@ import { Box, Button, TextField, Typography } from "@mui/material";
 import { useAppSelector } from "../../hooks/storeHooks";
 import { useEffect, useState } from "react";
 import { IGraphNode } from "../../../entities/types";
+import "./AdressData.scss";
 
 interface IAgents {
     receivers: string[],
@@ -29,7 +30,7 @@ const AdressData: React.FC = () => {
         })
     }, [selectedNodeId])
 
-    if (selectedNodeId !== null) {
+    if (selectedNodeId.length !== 0) {
         return (
             <Box
                 component="section"
@@ -37,21 +38,21 @@ const AdressData: React.FC = () => {
             >
                 <Box className="adress-data-title">
                     <div>Adress: {selectedNode?.id}</div>
-                    <div>Contagents: </div>
                 </Box>
                 <Box
                     className="adress-data-agents"
-                    sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', paddingTop: '15px', borderTop: '1px solid rgba(25, 118, 210, 0.5)' }}
                 >
                     <div className="adress-data-agents-senders">
+                        <div>Senders: </div>
                         {agents?.senders.map((sender) => (
-                            <div>{sender}</div>
+                            <div key={`sender key ${sender}`}>{sender}</div>
                         ))}
                     </div>
 
                     <div className="adress-data-agents-receivers">
+                        <div>Receivers: </div>
                         {agents?.receivers.map((receiver) => (
-                            <div>{receiver}</div>
+                            <div key={`receiver key ${receiver}`}>{receiver}</div>
                         ))}
                     </div>
                 </Box>

@@ -14,17 +14,19 @@ const GraphViewer: React.FC = () => {
     const height = 720;
 
     const { nodes, links } = useAppSelector((state) => state.storedData.data);
+    const { centerNodes } = useAppSelector((state) => state.storedData);
     const svgRef = useRef<SVGSVGElement>(null);
     const existingNodes = useRef(new Map<IGraphNode["id"], IGraphNode>());
 
     const mutableNodes = useMemo(() => {
         return calcNodePositions({
             nodes,
-            links,
             existingNodes: existingNodes.current,
+            links,
+            centerNodes
         }).map((node) => {
             existingNodes.current.set(node.id, node);
-            return node;
+            return { ...node };
         });
     }, [nodes, links]);
 

@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { GraphState, IGetDataResponse } from "./types";
 import { graphApi } from "./graphApi";
+import { findNewCenterNode } from "../shared/utils/findNewCenterNode";
 
 
 const initialState: GraphState = {
@@ -12,7 +13,8 @@ const initialState: GraphState = {
         errorStatus: false,
         errorMessage: null
     },
-    selectedNodeId: ''
+    selectedNodeId: '',
+    centerNodes: []
 };
 
 const graphSlice = createSlice({
@@ -20,9 +22,7 @@ const graphSlice = createSlice({
     initialState,
     reducers: {
         setSelectedNodeId: (state, action: PayloadAction<string>) => {
-            console.log('Reducer setSelectedNodeId called with:', action.payload);
             state.selectedNodeId = action.payload;
-            console.log('New selectedNodeId in state:', state.selectedNodeId);
         }
     },
     extraReducers: (builder) => {
@@ -46,8 +46,14 @@ const graphSlice = createSlice({
                     }))
                     .filter(link => !existingLinks.has(`${link.source}-${link.target}-${link.label}`));
 
+                const centerNode = findNewCenterNode(formattedLinks);
+
                 state.data.nodes = [...state.data.nodes, ...newNodes];
                 state.data.links = [...state.data.links, ...formattedLinks];
+
+                if (centerNode !== null && centerNode !== undefined) {
+                    state.centerNodes = [...state.centerNodes, centerNode]
+                }
             })
             .addMatcher(graphApi.endpoints.getData.matchRejected, (state) => {
                 state.error.errorStatus = true;

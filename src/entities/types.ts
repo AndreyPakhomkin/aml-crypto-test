@@ -8,7 +8,7 @@ export interface IToken {
 
 export interface IGraphNode extends SimulationNodeDatum {
     id: string,
-    type: string,
+    type: 'user' | 'bridge' | 'cex',
     name: string,
     usdt_balance: number,
     tokens: IToken[],
@@ -43,7 +43,8 @@ export interface GraphState {
         links: IGraphLink[],
     },
     error: IError,
-    selectedNodeId: string
+    selectedNodeId: string,
+    centerNodes: string[]
 }
 
 export interface IGetDataResponse {

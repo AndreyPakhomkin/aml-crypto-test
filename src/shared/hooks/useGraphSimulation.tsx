@@ -13,6 +13,12 @@ interface UseGraphSimulationProps {
     links: IGraphLink[];
 }
 
+const typeToColor = {
+    user: 'rgb(66, 139, 212)',
+    bridge: 'rgb(40, 97, 153)',
+    cex: 'rgb(69, 162, 255)',
+};
+
 const RADIUS = 31;
 
 const simulation = forceSimulation<IGraphNode, IGraphLink>()
@@ -58,9 +64,9 @@ const useGraphSimulation = ({ nodes, links }: UseGraphSimulationProps) => {
             .data(nodes)
             .join("foreignObject")
             .classed("node", true)
+            .attr("style", (d) => `background-color: ${typeToColor[d.type] || "gray"}`)
             .on("click", function (event, d: IGraphNode) {
                 dispatch(setSelectedNodeId(d.id));
-                console.log('click')
             })
             .each(function (node) {
                 const root = createRoot(this);

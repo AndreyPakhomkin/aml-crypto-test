@@ -1,83 +1,137 @@
 import { IGraphLink, IGraphNode } from "../../entities/types";
-import { randomUniform } from "d3-random";
 
-interface CalculateInitialNodePositionsProps {
+interface CalcInitialNodePositionsProps {
     nodes: IGraphNode[];
-    links: IGraphLink[];
-    existingNodes: Map<IGraphNode["id"], IGraphNode>;
+    existingNodes: Map<string, IGraphNode>;
+    links: IGraphLink[],
+    centerNodes: string[]
 }
 
-const calculateInitialNodePositions = ({
-    nodes,
-    links,
-    existingNodes,
-}: CalculateInitialNodePositionsProps): IGraphNode[] => {
-    const newUnlinkedNodes = nodes.filter(
-        (node) => !links.some((link) => link.source === node.id || link.target === node.id)
-    );
+interface IArea {
+    minX: number,
+    minY: number,
+    maxX: number,
+    maxY: number
+}
 
-    const hasNewUnlinkedNodes = newUnlinkedNodes.length > 0;
-    const minRadius = 1000;
-    const maxRadius = 1500;
-    const generateRandomRadius = randomUniform(minRadius, maxRadius);
-
-    let unlinkedGroupOffsetX = 0;
-    let unlinkedGroupOffsetY = 0;
-
-    if (hasNewUnlinkedNodes) {
-        const radius = generateRandomRadius();
-        const angle = Math.random() * 2 * Math.PI;
-        unlinkedGroupOffsetX = radius * Math.cos(angle);
-        unlinkedGroupOffsetY = radius * Math.sin(angle);
-    }
-
+// Принимать нужно новые ноды и существующие ноды
+const calcNodePositions = ({ nodes, existingNodes, links, centerNodes }: CalcInitialNodePositionsProps): IGraphNode[] => {
     return nodes.map((node) => {
-        if (existingNodes.has(node.id)) {
-            return existingNodes.get(node.id)!;
-        }
-
-        const relatedLinks = links.filter(
-            (link) => link.source === node.id || link.target === node.id
-        );
-
-        let x: number | undefined = node.x;
-        let y: number | undefined = node.y;
-
-        if (relatedLinks.length > 0) {
-            const mainNode = relatedLinks
-                .map(
-                    (link) =>
-                        existingNodes.get(link.source as string) ??
-                        existingNodes.get(link.target as string)
-                )
-                .find(Boolean);
-
-            if (mainNode && mainNode.x !== undefined && mainNode.y !== undefined) {
-                let incoming = 0;
-                let outgoing = 0;
-
-                relatedLinks.forEach((link) => {
-                    const tokensSum = (link.tokens_amount || []).reduce((sum, token) => sum + (token.usdt_amount || 0), 0);
-                    const totalAmount = (link.usdt_amount || 0) + tokensSum;
-
-                    if (link.target === node.id) incoming += totalAmount;
-                    if (link.source === node.id) outgoing += totalAmount;
-                });
-
-                x = mainNode.x + (incoming >= outgoing ? 100 : -100);
-                y = mainNode.y + (Math.random() - 0.5) * 50;
+        // Проверяем, является ли нода центральной
+        if (centerNodes.includes(node.id)) {
+            // если нода центральная, ищем ее в существующих
+            if (existingNodes.has(node.id)) {
+                // если центральная нода есть в существующих, менять ничего не надо
+                return { ...node }
             } else {
-                // Если не нашел ноду, возврашаю просто рандомные числа
-                x = (Math.random() - 0.5) * 10;
-                y = (Math.random() - 0.5) * 10;
+                // если центральная нода только что добавлена, зададим ей координаты и вернем с ними
+                let resultNode;
+                if (existingNodes.entries.length === 0) {
+                    resultNode = setStartRandomCoords(node);
+                } else {
+                    const forbiddenArea = findExistingGraphCoords(existingNodes)
+                    resultNode = getRandomCoords(node, forbiddenArea)
+                }
+                return resultNode
             }
         } else {
-            x = (node.x || 0) + unlinkedGroupOffsetX;
-            y = (node.y || 0) + unlinkedGroupOffsetY;
-        }
+            // если нода не центральная, зададим ей смещение относительно центра ее графа
 
-        return { ...node, x, y };
+            // для начала определим ее центр
+            const link = links.find(link => link.source === node.id || link.target === node.id);
+            const localCenterNodeId = link!.source === node.id ? link!.target : link!.source;
+            const localCenterNode = nodes.find(n => n.id === localCenterNodeId);
+
+            // затем посчитаем переводы и вернем новые координаты
+            const nodeWithOffset = setOffset(node, localCenterNode!, links)
+
+            return nodeWithOffset
+        }
     });
 };
 
-export default calculateInitialNodePositions;
+export default calcNodePositions;
+
+const findExistingGraphCoords = (existingNodes: Map<string, IGraphNode>): IArea => {
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    existingNodes.forEach(node => {
+        if (node.x < minX) minX = node.x;
+        if (node.y < minY) minY = node.y;
+        if (node.x > maxX) maxX = node.x;
+        if (node.y > maxY) maxY = node.y;
+    });
+
+    return { minX, minY, maxX, maxY };
+};
+
+const getRandomCoords = (node: IGraphNode, forbiddenArea: IArea | undefined) => {
+    if (!forbiddenArea) {
+        const radius = 100;
+        const angle = Math.random() * 2 * Math.PI;
+        const x = radius * Math.cos(angle);
+        const y = radius * Math.sin(angle);
+        return { ...node, x, y };
+    }
+
+    // Вычисляем максимальный радиус
+    const points = [
+        { x: forbiddenArea.minX, y: forbiddenArea.minY },
+        { x: forbiddenArea.maxX, y: forbiddenArea.maxY }
+    ];
+
+    const maxRadius = Math.max(
+        ...points.map(p => Math.sqrt(p.x ** 2 + p.y ** 2))
+    );
+
+    let x, y;
+
+    do {
+        // Генерируем случайную точку в пределах круга с радиусом maxRadius
+        const angle = Math.random() * 2 * Math.PI;
+        const r = Math.random() * maxRadius;
+        x = r * Math.cos(angle);
+        y = r * Math.sin(angle);
+    } while (
+        x >= forbiddenArea.minX && x <= forbiddenArea.maxX &&
+        y >= forbiddenArea.minY && y <= forbiddenArea.maxY
+    );
+
+    return { ...node, x, y };
+};
+
+
+const setStartRandomCoords = (node: IGraphNode) => {
+    const radius = 100;
+    const angle = Math.random() * 2 * Math.PI;
+    const x = radius * Math.cos(angle);
+    const y = radius * Math.sin(angle);
+
+    return { ...node, x, y };
+}
+
+const setOffset = (node: IGraphNode, localCenterNode: IGraphNode, links: IGraphLink[]) => {
+    let incoming = 0;
+    let outgoing = 0;
+    const offset = 300;
+    let x = 0;
+    let y = 0;
+
+    const relatedLinks = links.filter(link => link.source === node.id || link.target === node.id);
+
+    relatedLinks.forEach(link => {
+        const tokensSum = (link.tokens_amount || []).reduce((sum, token) => sum + (token.usdt_amount || 0), 0);
+        const totalAmount = (link.usdt_amount || 0) + tokensSum;
+
+        if (link.target === node.id) incoming += totalAmount;
+        if (link.source === node.id) outgoing += totalAmount;
+
+        x = node.x! + (incoming >= outgoing ? (localCenterNode.x + offset) : (localCenterNode.x - offset));
+        y = node.y! + (Math.random() - 0.5) * 50;
+    })
+
+    return { ...node, x, y }
+}
