@@ -38,6 +38,7 @@ const AdressData: React.FC = () => {
             >
                 <Box className="adress-data-title">
                     <div>Adress: {selectedNode?.id}</div>
+                    <div>Type: {selectedNode?.type}</div>
                 </Box>
                 <Box
                     className="adress-data-agents"

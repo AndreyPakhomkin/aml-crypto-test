@@ -44,7 +44,8 @@ export interface GraphState {
     },
     error: IError,
     selectedNodeId: string,
-    centerNodes: string[]
+    centerNodes: string[],
+    displayCurrency: 'usdt' | 'tokens'
 }
 
 export interface IGetDataResponse {

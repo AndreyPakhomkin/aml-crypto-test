@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, isAction, PayloadAction } from "@reduxjs/toolkit";
 import { GraphState, IGetDataResponse } from "./types";
 import { graphApi } from "./graphApi";
 import { findNewCenterNode } from "../shared/utils/findNewCenterNode";
@@ -14,7 +14,8 @@ const initialState: GraphState = {
         errorMessage: null
     },
     selectedNodeId: '',
-    centerNodes: []
+    centerNodes: [],
+    displayCurrency: 'usdt'
 };
 
 const graphSlice = createSlice({
@@ -23,6 +24,11 @@ const graphSlice = createSlice({
     reducers: {
         setSelectedNodeId: (state, action: PayloadAction<string>) => {
             state.selectedNodeId = action.payload;
+        },
+        setDisplyCurrency: (state, action: PayloadAction<'usdt' | 'tokens'>) => {
+            if (state.displayCurrency !== action.payload) {
+                state.displayCurrency = action.payload
+            }
         }
     },
     extraReducers: (builder) => {
@@ -62,5 +68,5 @@ const graphSlice = createSlice({
     },
 });
 
-export const { setSelectedNodeId } = graphSlice.actions;
+export const { setSelectedNodeId, setDisplyCurrency } = graphSlice.actions;
 export default graphSlice.reducer;

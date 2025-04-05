@@ -14,6 +14,10 @@ svg {
     margin-top: 15px;
 }
 
+.graph-container {
+    position: relative;
+}
+
 .node {
     font-size: 10px;
     width: 120px;
@@ -42,6 +46,6 @@ svg {
 .link-label {
     fill: rgba(128, 128, 128, 0.7);
     text-anchor: middle;
-    font-size: 10px;
+    font-size: 8px;
     fill: rgba(128, 128, 128, 0.7);
 }

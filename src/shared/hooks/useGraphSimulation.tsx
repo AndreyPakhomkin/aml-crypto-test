@@ -7,10 +7,12 @@ import { IGraphLink, IGraphNode } from "../../entities/types";
 import GraphNode from "../../shared/ui/GraphNode/GraphNode";
 import { setSelectedNodeId } from "../../entities/graphSlice";
 import { useAppDispatch } from "./storeHooks";
+import { defineShowingCurrency } from "../utils/defineShowingCurrency";
 
 interface UseGraphSimulationProps {
     nodes: IGraphNode[];
     links: IGraphLink[];
+    displayCurrency: 'usdt' | 'tokens'
 }
 
 const typeToColor = {
@@ -24,7 +26,7 @@ const RADIUS = 31;
 const simulation = forceSimulation<IGraphNode, IGraphLink>()
     .force("collision", forceCollide(RADIUS * 1))
 
-const useGraphSimulation = ({ nodes, links }: UseGraphSimulationProps) => {
+const useGraphSimulation = ({ nodes, links, displayCurrency }: UseGraphSimulationProps) => {
     const dispatch = useAppDispatch();
     const groupRef = useRef<SVGGElement>(null);
 
@@ -40,7 +42,7 @@ const useGraphSimulation = ({ nodes, links }: UseGraphSimulationProps) => {
                 "link",
                 forceLink<IGraphNode, IGraphLink>(links)
                     .id((d) => d.id)
-                    .distance(300)
+                    .distance(350)
             )
             .alpha(0.2)
             .restart();
@@ -57,7 +59,7 @@ const useGraphSimulation = ({ nodes, links }: UseGraphSimulationProps) => {
             .join("text")
             .classed("link-label", true)
             .attr("dy", -5)
-            .text((d) => (d.usdt_amount ? `${Math.trunc(d.usdt_amount)} USDT` : ""));
+            .text((d) => defineShowingCurrency(displayCurrency, d));
 
         const nodesSelection = g
             .selectAll<SVGForeignObjectElement, IGraphNode>("foreignObject.node")
@@ -82,6 +84,10 @@ const useGraphSimulation = ({ nodes, links }: UseGraphSimulationProps) => {
             g.selectAll<SVGLineElement, IGraphLink>("line").each(function () {
                 gNode.insertBefore(this, firstNode);
             });
+
+            g.selectAll<SVGTextElement, IGraphLink>("text.link-label").each(function () {
+                gNode.insertBefore(this, firstNode);
+            });
         }
 
         const dragBehavior = drag<SVGForeignObjectElement, IGraphNode>()
@@ -104,18 +110,30 @@ const useGraphSimulation = ({ nodes, links }: UseGraphSimulationProps) => {
 
         simulation.on("tick", () => {
             linkSelection
-                .attr("x1", (d: IGraphLink) => (d.source as IGraphNode).x!)
-                .attr("y1", (d: IGraphLink) => (d.source as IGraphNode).y!)
-                .attr("x2", (d: IGraphLink) => (d.target as IGraphNode).x!)
-                .attr("y2", (d: IGraphLink) => (d.target as IGraphNode).y!);
+                .attr("x1", (d) => (d.source as IGraphNode).x!)
+                .attr("y1", (d) => (d.source as IGraphNode).y!)
+                .attr("x2", (d) => (d.target as IGraphNode).x!)
+                .attr("y2", (d) => (d.target as IGraphNode).y!);
 
             linksLabelSelection
-                .attr("x", (d: IGraphLink) => ((d.source as IGraphNode).x! + (d.target as IGraphNode).x!) / 2)
-                .attr("y", (d: IGraphLink) => ((d.source as IGraphNode).y! + (d.target as IGraphNode).y!) / 2);
+                .attr("x", (d) => ((d.source as IGraphNode).x! + (d.target as IGraphNode).x!) / 2)
+                .attr("y", (d) => ((d.source as IGraphNode).y! + (d.target as IGraphNode).y!) / 2)
+                .attr("transform", (d: IGraphLink) => {
+                    const x1 = (d.source as IGraphNode).x!;
+                    const y1 = (d.source as IGraphNode).y!;
+                    const x2 = (d.target as IGraphNode).x!;
+                    const y2 = (d.target as IGraphNode).y!;
+
+                    const cx = (x1 + x2) / 2;
+                    const cy = (y1 + y2) / 2;
+                    const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+
+                    return `rotate(${angle}, ${cx}, ${cy})`;
+                });
 
             nodesSelection.attr("transform", (d) => `translate(${d.x! - 60}, ${d.y! - 30})`);
         });
-    }, [nodes, links, simulation]);
+    }, [nodes, links, simulation, displayCurrency]);
 
     return { groupRef, simulationNodes: nodes };
 };

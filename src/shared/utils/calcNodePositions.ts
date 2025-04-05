@@ -17,28 +17,20 @@ interface IArea {
 // Принимать нужно новые ноды и существующие ноды
 const calcNodePositions = ({ nodes, existingNodes, links, centerNodes }: CalcInitialNodePositionsProps): IGraphNode[] => {
 
-    console.log(2, existingNodes)
     const nodesWithCoords = nodes.map((node) => {
         // Проверяем, является ли нода центральной
         if (centerNodes.includes(node.id)) {
-            console.log('centerNodes.includes!!!!', node);
-
             // Если центральная нода есть в существующих, не меняем её
             if (existingNodes.has(node.id)) {
-                console.log(1, existingNodes);
                 // Сохраняем координаты существующей центральной ноды
                 return { ...existingNodes.get(node.id)! };
             } else {
                 // Если центральная нода только что добавлена, задаём ей координаты и возвращаем с ними
                 let resultNode;
-                console.log('existingNodes____', existingNodes.size);
                 if (existingNodes.size === 0) {
                     resultNode = setStartRandomCoords(node);
-                    console.log('!!!!existingNodes node', resultNode);
                 } else {
-                    console.log(2);
                     const forbiddenArea = findExistingGraphCoords(existingNodes);
-                    console.log(forbiddenArea);
                     resultNode = getRandomCoords(node, forbiddenArea);
                 }
                 return resultNode;
@@ -64,7 +56,6 @@ const calcNodePositions = ({ nodes, existingNodes, links, centerNodes }: CalcIni
     return nodesWithCoords;
 };
 
-
 export default calcNodePositions;
 
 const findExistingGraphCoords = (existingNodes: Map<string, IGraphNode>): IArea => {
@@ -80,13 +71,11 @@ const findExistingGraphCoords = (existingNodes: Map<string, IGraphNode>): IArea 
         if (node.y > maxY) maxY = node.y;
     });
 
-    console.log('AREA', { minX, minY, maxX, maxY })
     return { minX, minY, maxX, maxY };
 };
 
 const getRandomCoords = (node: IGraphNode, forbiddenArea: IArea | undefined) => {
     if (!forbiddenArea) {
-        console.log('!forbiddenArea', !forbiddenArea)
         const radius = 100;
         const angle = Math.random() * 2 * Math.PI;
         const x = radius * Math.cos(angle);
@@ -103,20 +92,18 @@ const getRandomCoords = (node: IGraphNode, forbiddenArea: IArea | undefined) => 
     const maxRadius = Math.max(
         ...points.map(p => Math.sqrt(p.x ** 2 + p.y ** 2))
     );
-    console.log('maxRadius', maxRadius)
     let x, y;
 
     do {
         // Генерируем случайную точку в пределах круга с радиусом maxRadius
         const angle = Math.random() * 2 * Math.PI;
-        const r = Math.random() * maxRadius;
+        const r = Math.random() * maxRadius * 2;
         x = r * Math.cos(angle);
         y = r * Math.sin(angle);
     } while (
         x >= forbiddenArea.minX && x <= forbiddenArea.maxX &&
         y >= forbiddenArea.minY && y <= forbiddenArea.maxY
     );
-    console.log(3, { ...node, x, y })
     return { ...node, x, y };
 };
 
@@ -149,8 +136,6 @@ const setOffset = (node: IGraphNode, localCenterNode: IGraphNode, links: IGraphL
         if (link.source === node.id) outgoing += totalAmount;
 
         x = (incoming >= outgoing ? (centerNodeX + offset) : (centerNodeX - offset));
-        y = (Math.random() - 0.5) * 50;
     })
-
     return { ...node, x, y }
 }
