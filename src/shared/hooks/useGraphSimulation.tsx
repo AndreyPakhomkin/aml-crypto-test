@@ -8,11 +8,13 @@ import GraphNode from "../../shared/ui/GraphNode/GraphNode";
 import { setSelectedNodeId } from "../../entities/graphSlice";
 import { useAppDispatch } from "./storeHooks";
 import { defineShowingCurrency } from "../utils/defineShowingCurrency";
+import { useGetDataMutation } from "../../entities/graphApi";
 
 interface UseGraphSimulationProps {
     nodes: IGraphNode[];
     links: IGraphLink[];
-    displayCurrency: 'usdt' | 'tokens'
+    displayCurrency: 'usdt' | 'tokens';
+    updateNodes: () => void;
 }
 
 const typeToColor = {
@@ -23,12 +25,17 @@ const typeToColor = {
 
 const RADIUS = 31;
 
-const simulation = forceSimulation<IGraphNode, IGraphLink>()
-    .force("collision", forceCollide(RADIUS * 1))
+// Глобальная WeakMap для хранения корневых элементов React
+// WeakMap позволяет DOM-элементам быть сборщиком мусора
+const rootsMap = new WeakMap<Element, ReturnType<typeof createRoot>>();
 
-const useGraphSimulation = ({ nodes, links, displayCurrency }: UseGraphSimulationProps) => {
+const simulation = forceSimulation<IGraphNode, IGraphLink>()
+    .force("collision", forceCollide(RADIUS * 1.1))
+
+const useGraphSimulation = ({ nodes, links, displayCurrency, updateNodes }: UseGraphSimulationProps) => {
     const dispatch = useAppDispatch();
     const groupRef = useRef<SVGGElement>(null);
+    const [getData] = useGetDataMutation();
 
     useEffect(() => {
         if (!groupRef.current) return;
@@ -38,12 +45,13 @@ const useGraphSimulation = ({ nodes, links, displayCurrency }: UseGraphSimulatio
         simulation.nodes(nodes);
 
         simulation
-            .force(
-                "link",
+            .force("link",
                 forceLink<IGraphNode, IGraphLink>(links)
                     .id((d) => d.id)
                     .distance(350)
+                    .strength(0)
             )
+            .force("charge", forceManyBody().strength(0))
             .alpha(0.2)
             .restart();
 
@@ -72,8 +80,20 @@ const useGraphSimulation = ({ nodes, links, displayCurrency }: UseGraphSimulatio
             .on("click", function (event, d: IGraphNode) {
                 dispatch(setSelectedNodeId(d.id));
             })
+            .on("dblclick", function (event, d: IGraphNode) {
+                event.stopPropagation();
+                updateNodes();
+                getData({ adress: d.id });
+            })
             .each(function (node) {
-                const root = createRoot(this);
+                // Используем сам DOM-элемент как ключ
+                let root = rootsMap.get(this);
+                if (!root) {
+                    // Создаем корневой элемент только если его еще нет
+                    root = createRoot(this);
+                    rootsMap.set(this, root);
+                }
+                // Рендерим компонент в существующий корневой элемент
                 root.render(<GraphNode node={node} />);
             });
 
@@ -102,8 +122,6 @@ const useGraphSimulation = ({ nodes, links, displayCurrency }: UseGraphSimulatio
             })
             .on("end", (event) => {
                 if (!event.active) simulation.alphaTarget(0);
-                event.subject.fx = null;
-                event.subject.fy = null;
             });
 
         nodesSelection.call(dragBehavior);
@@ -133,7 +151,9 @@ const useGraphSimulation = ({ nodes, links, displayCurrency }: UseGraphSimulatio
 
             nodesSelection.attr("transform", (d) => `translate(${d.x! - 60}, ${d.y! - 30})`);
         });
-    }, [nodes, links, simulation, displayCurrency]);
+
+        simulation.alphaTarget(0);
+    }, [nodes, links, displayCurrency, updateNodes, getData]);
 
     return { groupRef, simulationNodes: nodes };
 };

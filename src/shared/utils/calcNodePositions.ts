@@ -16,16 +16,23 @@ interface IArea {
 
 // Принимать нужно новые ноды и существующие ноды
 const calcNodePositions = ({ nodes, existingNodes, links, centerNodes }: CalcInitialNodePositionsProps): IGraphNode[] => {
+    const centerNodeResults: IGraphNode[] = [];
+    const otherNodeResults: IGraphNode[] = [];
 
-    const nodesWithCoords = nodes.map((node) => {
-        // Проверяем, является ли нода центральной
+    // 1. Обрабатываем сначала центральные ноды
+    for (const node of nodes) {
         if (centerNodes.includes(node.id)) {
-            // Если центральная нода есть в существующих, не меняем её
             if (existingNodes.has(node.id)) {
-                // Сохраняем координаты существующей центральной ноды
-                return { ...existingNodes.get(node.id)! };
+                const existing = existingNodes.get(node.id)!;
+
+                if ('x' in existing && 'y' in existing) {
+                    centerNodeResults.push(existing);
+                } else {
+                    const fallback = setStartRandomCoords(node);
+                    existingNodes.set(fallback.id, fallback);
+                    centerNodeResults.push(fallback);
+                }
             } else {
-                // Если центральная нода только что добавлена, задаём ей координаты и возвращаем с ними
                 let resultNode;
                 if (existingNodes.size === 0) {
                     resultNode = setStartRandomCoords(node);
@@ -33,28 +40,51 @@ const calcNodePositions = ({ nodes, existingNodes, links, centerNodes }: CalcIni
                     const forbiddenArea = findExistingGraphCoords(existingNodes);
                     resultNode = getRandomCoords(node, forbiddenArea);
                 }
-                return resultNode;
-            }
-        } else {
-            // Если нода не центральная, задаём ей смещение относительно центра её графа
-            if (!node.x && !node.y) {
-                // Для начала определим её центр
-                const link = links.find(link => link.source === node.id || link.target === node.id);
-                const localCenterNodeId = link!.source === node.id ? link!.target : link!.source;
-                const localCenterNode = nodes.find(n => n.id === localCenterNodeId);
-
-                // Затем посчитаем переводы и вернем новые координаты
-                const nodeWithOffset = setOffset(node, localCenterNode!, links);
-
-                return nodeWithOffset;
-            } else {
-                // Если координаты уже есть, не меняем их
-                return { ...node };
+                existingNodes.set(resultNode.id, resultNode); // Сохраняем сразу
+                centerNodeResults.push(resultNode);
             }
         }
-    });
-    return nodesWithCoords;
+    }
+
+    // 2. Затем обрабатываем остальные
+    for (const node of nodes) {
+        if (!centerNodes.includes(node.id)) {
+            if (existingNodes.has(node.id)) {
+                const existing = existingNodes.get(node.id)!;
+
+                if ('x' in existing && 'y' in existing) {
+                    otherNodeResults.push(existing);
+                } else {
+                    const fallback = setStartRandomCoords(node);
+                    existingNodes.set(fallback.id, fallback);
+                    otherNodeResults.push(fallback);
+                }
+            } else {
+                if (!node.x && !node.y) {
+                    const link = links.find(link => link.source === node.id || link.target === node.id);
+                    const localCenterNodeId = link?.source === node.id ? link?.target : link?.source;
+                    const localCenterNode = existingNodes.get(localCenterNodeId as string);
+
+                    if (localCenterNode) {
+                        const nodeWithOffset = setOffset(node, localCenterNode, links);
+                        existingNodes.set(nodeWithOffset.id, nodeWithOffset); // Сохраняем
+                        otherNodeResults.push(nodeWithOffset);
+                    } else {
+                        // Фолбэк: координаты если нет центра
+                        const nodeWithFallback = setStartRandomCoords(node);
+                        existingNodes.set(nodeWithFallback.id, nodeWithFallback);
+                        otherNodeResults.push(nodeWithFallback);
+                    }
+                } else {
+                    otherNodeResults.push({ ...node });
+                }
+            }
+        }
+    }
+
+    return [...centerNodeResults, ...otherNodeResults];
 };
+
 
 export default calcNodePositions;
 
@@ -77,7 +107,7 @@ const findExistingGraphCoords = (existingNodes: Map<string, IGraphNode>): IArea 
 const getRandomCoords = (node: IGraphNode, forbiddenArea: IArea | undefined) => {
     if (!forbiddenArea) {
         const radius = 100;
-        const angle = Math.random() * 2 * Math.PI;
+        const angle = Math.random() * 10 * Math.PI;
         const x = radius * Math.cos(angle);
         const y = radius * Math.sin(angle);
         return { ...node, x, y };
@@ -110,7 +140,7 @@ const getRandomCoords = (node: IGraphNode, forbiddenArea: IArea | undefined) => 
 
 const setStartRandomCoords = (node: IGraphNode) => {
     const radius = 100;
-    const angle = Math.random() * 2 * Math.PI;
+    const angle = Math.random() * Math.PI;
     const x = radius * Math.cos(angle);
     const y = radius * Math.sin(angle);
 
@@ -120,9 +150,11 @@ const setStartRandomCoords = (node: IGraphNode) => {
 const setOffset = (node: IGraphNode, localCenterNode: IGraphNode, links: IGraphLink[]) => {
     let incoming = 0;
     let outgoing = 0;
-    const offset = 400;
+    const offset = 300;
     let x = 0;
     let y = 0;
+
+    console.log('localCenterNode', localCenterNode)
 
     const relatedLinks = links.filter(link => link.source === node.id || link.target === node.id);
 
@@ -130,12 +162,17 @@ const setOffset = (node: IGraphNode, localCenterNode: IGraphNode, links: IGraphL
         const tokensSum = (link.tokens_amount || []).reduce((sum, token) => sum + (token.usdt_amount || 0), 0);
         const totalAmount = (link.usdt_amount || 0) + tokensSum;
 
+        console.log('centerNodeX,centerNodeY', localCenterNode.x, localCenterNode.y)
+
         const centerNodeX = localCenterNode.x ? localCenterNode.x : 0;
+        const centerNodeY = localCenterNode.y ? localCenterNode.y : 0;
 
         if (link.target === node.id) incoming += totalAmount;
         if (link.source === node.id) outgoing += totalAmount;
 
         x = (incoming >= outgoing ? (centerNodeX + offset) : (centerNodeX - offset));
+        y = centerNodeY - 30 + Math.random() * 10 * Math.PI;
+        console.log('x,y', x, y)
     })
     return { ...node, x, y }
 }

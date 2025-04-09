@@ -17,6 +17,7 @@ const GraphViewer: React.FC = () => {
     const { centerNodes, displayCurrency } = useAppSelector((state) => state.storedData);
     const svgRef = useRef<SVGSVGElement>(null);
     const existingNodes = useRef(new Map<IGraphNode["id"], IGraphNode>());
+    const simulationNodesRef = useRef<IGraphNode[]>([]);
 
     const mutableNodes = useMemo(() => {
         return calcNodePositions({
@@ -24,9 +25,6 @@ const GraphViewer: React.FC = () => {
             existingNodes: existingNodes.current,
             links,
             centerNodes
-        }).map((node) => {
-            existingNodes.current.set(node.id, node);
-            return { ...node };
         });
     }, [nodes, links]);
 
@@ -43,15 +41,10 @@ const GraphViewer: React.FC = () => {
         }));
     }, [nodes, links, mutableNodes]);
 
-    const { groupRef, simulationNodes } = useGraphSimulation({
-        nodes: mutableNodes,
-        links: filledLinks,
-        displayCurrency: displayCurrency
-    });
-
     const updateExistingNodesFromSimulation = useCallback(() => {
-        if (simulationNodes) {
-            simulationNodes.forEach(simNode => {
+        const currentNodes = simulationNodesRef.current;
+        if (currentNodes && currentNodes.length > 0) {
+            currentNodes.forEach(simNode => {
                 const existingNode = existingNodes.current.get(simNode.id);
                 if (existingNode) {
                     existingNodes.current.set(simNode.id, {
@@ -64,7 +57,19 @@ const GraphViewer: React.FC = () => {
                 }
             });
         }
-    }, [simulationNodes, existingNodes]);
+    }, [existingNodes]);
+
+    const { groupRef, simulationNodes } = useGraphSimulation({
+        nodes: mutableNodes,
+        links: filledLinks,
+        displayCurrency: displayCurrency,
+        updateNodes: updateExistingNodesFromSimulation
+    });
+
+    // Обновляем ref при изменении simulationNodes
+    useEffect(() => {
+        simulationNodesRef.current = simulationNodes;
+    }, [simulationNodes]);
 
     useEffect(() => {
         if (!svgRef.current || !groupRef.current) return;

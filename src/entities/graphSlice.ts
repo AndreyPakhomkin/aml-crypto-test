@@ -1,5 +1,5 @@
 import { createSlice, isAction, PayloadAction } from "@reduxjs/toolkit";
-import { GraphState, IGetDataResponse } from "./types";
+import { GraphState, IGetDataResponse, IGraphNode } from "./types";
 import { graphApi } from "./graphApi";
 import { findNewCenterNode } from "../shared/utils/findNewCenterNode";
 
@@ -52,7 +52,7 @@ const graphSlice = createSlice({
                     }))
                     .filter(link => !existingLinks.has(`${link.source}-${link.target}-${link.label}`));
 
-                const centerNode = findNewCenterNode(formattedLinks);
+                const centerNode = action.payload.links.length === 0 ? action.payload.nodes[0].id : findNewCenterNode(formattedLinks);
 
                 state.data.nodes = [...state.data.nodes, ...newNodes];
                 state.data.links = [...state.data.links, ...formattedLinks];
