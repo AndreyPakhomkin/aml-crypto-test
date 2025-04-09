@@ -1,10 +1,10 @@
-import { IGraphLink, IGraphNode } from "../../entities/types";
+import { ICenterNode, IGraphLink, IGraphNode } from "../../entities/types";
 
 interface CalcInitialNodePositionsProps {
     nodes: IGraphNode[];
     existingNodes: Map<string, IGraphNode>;
-    links: IGraphLink[],
-    centerNodes: string[]
+    links: IGraphLink[];
+    centerNodes: Record<string, ICenterNode>;
 }
 
 interface IArea {
@@ -21,7 +21,7 @@ const calcNodePositions = ({ nodes, existingNodes, links, centerNodes }: CalcIni
 
     // 1. Обрабатываем сначала центральные ноды
     for (const node of nodes) {
-        if (centerNodes.includes(node.id)) {
+        if (centerNodes[node.id]) {
             if (existingNodes.has(node.id)) {
                 const existing = existingNodes.get(node.id)!;
 
@@ -48,7 +48,7 @@ const calcNodePositions = ({ nodes, existingNodes, links, centerNodes }: CalcIni
 
     // 2. Затем обрабатываем остальные
     for (const node of nodes) {
-        if (!centerNodes.includes(node.id)) {
+        if (!centerNodes[node.id]) {
             if (existingNodes.has(node.id)) {
                 const existing = existingNodes.get(node.id)!;
 
@@ -154,15 +154,11 @@ const setOffset = (node: IGraphNode, localCenterNode: IGraphNode, links: IGraphL
     let x = 0;
     let y = 0;
 
-    console.log('localCenterNode', localCenterNode)
-
     const relatedLinks = links.filter(link => link.source === node.id || link.target === node.id);
 
     relatedLinks.forEach(link => {
         const tokensSum = (link.tokens_amount || []).reduce((sum, token) => sum + (token.usdt_amount || 0), 0);
         const totalAmount = (link.usdt_amount || 0) + tokensSum;
-
-        console.log('centerNodeX,centerNodeY', localCenterNode.x, localCenterNode.y)
 
         const centerNodeX = localCenterNode.x ? localCenterNode.x : 0;
         const centerNodeY = localCenterNode.y ? localCenterNode.y : 0;
@@ -172,7 +168,6 @@ const setOffset = (node: IGraphNode, localCenterNode: IGraphNode, links: IGraphL
 
         x = (incoming >= outgoing ? (centerNodeX + offset) : (centerNodeX - offset));
         y = centerNodeY - 30 + Math.random() * 10 * Math.PI;
-        console.log('x,y', x, y)
     })
     return { ...node, x, y }
 }

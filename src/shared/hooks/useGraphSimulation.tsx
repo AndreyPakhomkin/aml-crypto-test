@@ -25,8 +25,6 @@ const typeToColor = {
 
 const RADIUS = 31;
 
-// Глобальная WeakMap для хранения корневых элементов React
-// WeakMap позволяет DOM-элементам быть сборщиком мусора
 const rootsMap = new WeakMap<Element, ReturnType<typeof createRoot>>();
 
 const simulation = forceSimulation<IGraphNode, IGraphLink>()
@@ -86,14 +84,11 @@ const useGraphSimulation = ({ nodes, links, displayCurrency, updateNodes }: UseG
                 getData({ adress: d.id });
             })
             .each(function (node) {
-                // Используем сам DOM-элемент как ключ
                 let root = rootsMap.get(this);
                 if (!root) {
-                    // Создаем корневой элемент только если его еще нет
                     root = createRoot(this);
                     rootsMap.set(this, root);
                 }
-                // Рендерим компонент в существующий корневой элемент
                 root.render(<GraphNode node={node} />);
             });
 

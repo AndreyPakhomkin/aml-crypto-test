@@ -1,5 +1,5 @@
 import { createSlice, isAction, PayloadAction } from "@reduxjs/toolkit";
-import { GraphState, IGetDataResponse, IGraphNode } from "./types";
+import { GraphState, IGetDataResponse, IGraphNode, INodeCollapsePayload } from "./types";
 import { graphApi } from "./graphApi";
 import { findNewCenterNode } from "../shared/utils/findNewCenterNode";
 
@@ -14,7 +14,7 @@ const initialState: GraphState = {
         errorMessage: null
     },
     selectedNodeId: '',
-    centerNodes: [],
+    centerNodes: {},
     displayCurrency: 'usdt'
 };
 
@@ -29,7 +29,19 @@ const graphSlice = createSlice({
             if (state.displayCurrency !== action.payload) {
                 state.displayCurrency = action.payload
             }
+        },
+        setCenterNodeCollapse: (state, action: PayloadAction<INodeCollapsePayload>) => {
+            const { nodeId, isCollapsed } = action.payload;
+            const oldNode = state.centerNodes[nodeId];
+
+            if (oldNode) {
+                state.centerNodes[nodeId] = {
+                    ...oldNode,
+                    isCollapsed,
+                };
+            }
         }
+
     },
     extraReducers: (builder) => {
         builder
@@ -52,13 +64,15 @@ const graphSlice = createSlice({
                     }))
                     .filter(link => !existingLinks.has(`${link.source}-${link.target}-${link.label}`));
 
-                const centerNode = action.payload.links.length === 0 ? action.payload.nodes[0].id : findNewCenterNode(formattedLinks);
+                const centerNodeId = action.payload.links.length === 0 ? action.payload.nodes[0].id : findNewCenterNode(formattedLinks);
 
                 state.data.nodes = [...state.data.nodes, ...newNodes];
                 state.data.links = [...state.data.links, ...formattedLinks];
 
-                if (centerNode !== null && centerNode !== undefined) {
-                    state.centerNodes = [...state.centerNodes, centerNode]
+                if (centerNodeId !== undefined) {
+                    state.centerNodes[centerNodeId] = {
+                        isCollapsed: false,
+                    };
                 }
             })
             .addMatcher(graphApi.endpoints.getData.matchRejected, (state) => {
@@ -68,5 +82,5 @@ const graphSlice = createSlice({
     },
 });
 
-export const { setSelectedNodeId, setDisplyCurrency } = graphSlice.actions;
+export const { setSelectedNodeId, setDisplyCurrency, setCenterNodeCollapse } = graphSlice.actions;
 export default graphSlice.reducer;

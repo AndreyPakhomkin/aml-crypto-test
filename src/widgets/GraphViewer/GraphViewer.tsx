@@ -8,6 +8,7 @@ import calcNodePositions from "../../shared/utils/calcNodePositions";
 import useGraphSimulation from "../../shared/hooks/useGraphSimulation";
 import Tools from "../Tools/Tools";
 import CurrencySwitch from "../../shared/ui/CurrencySwitch/CurrencySwitch";
+import CollapseSwitch from "../../shared/ui/ClasterSwitch/CollapseSwitch";
 
 const GraphViewer: React.FC = () => {
     const width = 1440;
@@ -94,6 +95,7 @@ const GraphViewer: React.FC = () => {
         <div className="page-container">
             <div className="graph-container">
                 <CurrencySwitch displayCurrency={displayCurrency} />
+                <CollapseSwitch />
                 <svg
                     width={width}
                     height={height}

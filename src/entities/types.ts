@@ -44,7 +44,7 @@ export interface GraphState {
     },
     error: IError,
     selectedNodeId: string,
-    centerNodes: string[],
+    centerNodes: Record<string, ICenterNode>,
     displayCurrency: 'usdt' | 'tokens'
 }
 
@@ -55,4 +55,13 @@ export interface IGetDataResponse {
 
 export interface IGetDataParams {
     adress: string
+}
+
+export interface ICenterNode {
+    isCollapsed: boolean
+}
+
+export interface INodeCollapsePayload {
+    nodeId: string;
+    isCollapsed: boolean
 }
