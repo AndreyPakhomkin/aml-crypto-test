@@ -21,7 +21,6 @@ const GraphViewer: React.FC = () => {
     const simulationNodesRef = useRef<IGraphNode[]>([]);
 
     const mutableNodes = useMemo(() => {
-        console.log(centerNodes)
         return calcNodePositions({
             nodes,
             existingNodes: existingNodes.current,
@@ -32,15 +31,20 @@ const GraphViewer: React.FC = () => {
 
     const filledLinks = useMemo(() => {
         const nodesMap = new Map(mutableNodes.map((node) => [node.id, node]));
-
-        return links.map((link) => ({
-            source: nodesMap.get(link.source as string)!,
-            target: nodesMap.get(link.target as string)!,
-            strength: 0,
-            label: link.label,
-            usdt_amount: link.usdt_amount,
-            tokens_amount: link.tokens_amount,
-        }));
+        return links
+            .filter(link => {
+                const sourceNode = nodesMap.get(link.source as string);
+                const targetNode = nodesMap.get(link.target as string);
+                return sourceNode && targetNode;
+            })
+            .map((link) => ({
+                source: nodesMap.get(link.source as string)!,
+                target: nodesMap.get(link.target as string)!,
+                strength: 0,
+                label: link.label,
+                usdt_amount: link.usdt_amount,
+                tokens_amount: link.tokens_amount,
+            }));
     }, [nodes, links, mutableNodes]);
 
     const updateExistingNodesFromSimulation = useCallback(() => {

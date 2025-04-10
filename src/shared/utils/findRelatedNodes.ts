@@ -34,7 +34,6 @@ export const findRelatedNodes = (centerNodeId: string, links: IGraphLink[], cent
             return involved && notWithCenter;
         });
 
-        // Если таких связей нет — можно скрывать
         if (otherConnections.length === 0) {
             relatedNodesId.push(nodeId);
             const node = nodes.find(n => n.id === nodeId);

@@ -73,6 +73,7 @@ const useGraphSimulation = ({ nodes, links, displayCurrency, updateNodes, center
             .data(nodes)
             .join("foreignObject")
             .classed("node", true)
+            .classed("collapsed-group-node", d => centerNodes[d.id]?.isCollapsed)
             .attr("style", (d) => `background-color: ${typeToColor[d.type] || "gray"}`)
             .attr("cx", d => d.x)
             .attr("cy", d => d.y)

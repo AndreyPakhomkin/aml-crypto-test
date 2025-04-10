@@ -14,7 +14,6 @@ interface IArea {
     maxY: number
 }
 
-// Принимать нужно новые ноды и существующие ноды
 const calcNodePositions = ({ nodes, existingNodes, links, centerNodes }: CalcInitialNodePositionsProps): IGraphNode[] => {
     const centerNodeResults: IGraphNode[] = [];
     const otherNodeResults: IGraphNode[] = [];
@@ -40,43 +39,49 @@ const calcNodePositions = ({ nodes, existingNodes, links, centerNodes }: CalcIni
                     const forbiddenArea = findExistingGraphCoords(existingNodes);
                     resultNode = getRandomCoords(node, forbiddenArea);
                 }
-                existingNodes.set(resultNode.id, resultNode); // Сохраняем сразу
+                existingNodes.set(resultNode.id, resultNode);
                 centerNodeResults.push(resultNode);
             }
         }
     }
 
-    // 2. Затем обрабатываем остальные
+    // 2. Затем обрабатываем остальные ноды
     for (const node of nodes) {
         if (!centerNodes[node.id]) {
-            if (existingNodes.has(node.id)) {
-                const existing = existingNodes.get(node.id)!;
+            // Проверяем, скрыта ли центральная нода, с которой связано это соединение
+            const isHidden = Object.values(centerNodes)
+                .some(centerNode => centerNode.hiddenNodesId.includes(node.id));
 
-                if ('x' in existing && 'y' in existing) {
-                    otherNodeResults.push(existing);
-                } else {
-                    const fallback = setStartRandomCoords(node);
-                    existingNodes.set(fallback.id, fallback);
-                    otherNodeResults.push(fallback);
-                }
-            } else {
-                if (!node.x && !node.y) {
-                    const link = links.find(link => link.source === node.id || link.target === node.id);
-                    const localCenterNodeId = link?.source === node.id ? link?.target : link?.source;
-                    const localCenterNode = existingNodes.get(localCenterNodeId as string);
+            if (!isHidden) {  // Если нода не скрыта
+                if (existingNodes.has(node.id)) {
+                    const existing = existingNodes.get(node.id)!;
 
-                    if (localCenterNode) {
-                        const nodeWithOffset = setOffset(node, localCenterNode, links);
-                        existingNodes.set(nodeWithOffset.id, nodeWithOffset); // Сохраняем
-                        otherNodeResults.push(nodeWithOffset);
+                    if ('x' in existing && 'y' in existing) {
+                        otherNodeResults.push(existing);
                     } else {
-                        // Фолбэк: координаты если нет центра
-                        const nodeWithFallback = setStartRandomCoords(node);
-                        existingNodes.set(nodeWithFallback.id, nodeWithFallback);
-                        otherNodeResults.push(nodeWithFallback);
+                        const fallback = setStartRandomCoords(node);
+                        existingNodes.set(fallback.id, fallback);
+                        otherNodeResults.push(fallback);
                     }
                 } else {
-                    otherNodeResults.push({ ...node });
+                    if (!node.x && !node.y) {
+                        const link = links.find(link => link.source === node.id || link.target === node.id);
+                        const localCenterNodeId = link?.source === node.id ? link?.target : link?.source;
+                        const localCenterNode = existingNodes.get(localCenterNodeId as string);
+
+                        if (localCenterNode) {
+                            const nodeWithOffset = setOffset(node, localCenterNode, links);
+                            existingNodes.set(nodeWithOffset.id, nodeWithOffset); // Сохраняем
+                            otherNodeResults.push(nodeWithOffset);
+                        } else {
+                            // Фолбэк: координаты если нет центра
+                            const nodeWithFallback = setStartRandomCoords(node);
+                            existingNodes.set(nodeWithFallback.id, nodeWithFallback);
+                            otherNodeResults.push(nodeWithFallback);
+                        }
+                    } else {
+                        otherNodeResults.push({ ...node });
+                    }
                 }
             }
         }
@@ -84,7 +89,6 @@ const calcNodePositions = ({ nodes, existingNodes, links, centerNodes }: CalcIni
 
     return [...centerNodeResults, ...otherNodeResults];
 };
-
 
 export default calcNodePositions;
 
