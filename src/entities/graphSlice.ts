@@ -31,13 +31,15 @@ const graphSlice = createSlice({
             }
         },
         setCenterNodeCollapse: (state, action: PayloadAction<INodeCollapsePayload>) => {
-            const { nodeId, isCollapsed } = action.payload;
+            const { nodeId, isCollapsed, nodesToHide, groupBalance } = action.payload;
             const oldNode = state.centerNodes[nodeId];
 
             if (oldNode) {
                 state.centerNodes[nodeId] = {
                     ...oldNode,
                     isCollapsed,
+                    hiddenNodesId: nodesToHide,
+                    groupBalance: groupBalance
                 };
             }
         }
@@ -72,6 +74,8 @@ const graphSlice = createSlice({
                 if (centerNodeId !== undefined) {
                     state.centerNodes[centerNodeId] = {
                         isCollapsed: false,
+                        hiddenNodesId: [],
+                        groupBalance: null
                     };
                 }
             })

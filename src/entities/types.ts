@@ -58,10 +58,14 @@ export interface IGetDataParams {
 }
 
 export interface ICenterNode {
-    isCollapsed: boolean
+    isCollapsed: boolean,
+    hiddenNodesId: string[],
+    groupBalance: number | null
 }
 
 export interface INodeCollapsePayload {
-    nodeId: string;
-    isCollapsed: boolean
+    nodeId: string,
+    isCollapsed: boolean,
+    nodesToHide: string[],
+    groupBalance: number
 }

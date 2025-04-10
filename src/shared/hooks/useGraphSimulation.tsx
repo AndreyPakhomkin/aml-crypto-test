@@ -3,7 +3,7 @@ import { forceCollide, forceLink, forceManyBody, forceSimulation } from "d3-forc
 import { drag } from "d3-drag";
 import { select } from "d3-selection";
 import { createRoot } from "react-dom/client";
-import { IGraphLink, IGraphNode } from "../../entities/types";
+import { ICenterNode, IGraphLink, IGraphNode } from "../../entities/types";
 import GraphNode from "../../shared/ui/GraphNode/GraphNode";
 import { setSelectedNodeId } from "../../entities/graphSlice";
 import { useAppDispatch } from "./storeHooks";
@@ -15,6 +15,7 @@ interface UseGraphSimulationProps {
     links: IGraphLink[];
     displayCurrency: 'usdt' | 'tokens';
     updateNodes: () => void;
+    centerNodes: Record<string, ICenterNode>
 }
 
 const typeToColor = {
@@ -30,7 +31,7 @@ const rootsMap = new WeakMap<Element, ReturnType<typeof createRoot>>();
 const simulation = forceSimulation<IGraphNode, IGraphLink>()
     .force("collision", forceCollide(RADIUS * 1.1))
 
-const useGraphSimulation = ({ nodes, links, displayCurrency, updateNodes }: UseGraphSimulationProps) => {
+const useGraphSimulation = ({ nodes, links, displayCurrency, updateNodes, centerNodes }: UseGraphSimulationProps) => {
     const dispatch = useAppDispatch();
     const groupRef = useRef<SVGGElement>(null);
     const [getData] = useGetDataMutation();
@@ -89,7 +90,7 @@ const useGraphSimulation = ({ nodes, links, displayCurrency, updateNodes }: UseG
                     root = createRoot(this);
                     rootsMap.set(this, root);
                 }
-                root.render(<GraphNode node={node} />);
+                root.render(<GraphNode node={node} centerNodes={centerNodes} />);
             });
 
         const gNode = g.node();

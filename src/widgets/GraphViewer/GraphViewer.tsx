@@ -21,13 +21,14 @@ const GraphViewer: React.FC = () => {
     const simulationNodesRef = useRef<IGraphNode[]>([]);
 
     const mutableNodes = useMemo(() => {
+        console.log(centerNodes)
         return calcNodePositions({
             nodes,
             existingNodes: existingNodes.current,
             links,
             centerNodes
         });
-    }, [nodes, links]);
+    }, [nodes, links, centerNodes]);
 
     const filledLinks = useMemo(() => {
         const nodesMap = new Map(mutableNodes.map((node) => [node.id, node]));
@@ -64,10 +65,10 @@ const GraphViewer: React.FC = () => {
         nodes: mutableNodes,
         links: filledLinks,
         displayCurrency: displayCurrency,
-        updateNodes: updateExistingNodesFromSimulation
+        updateNodes: updateExistingNodesFromSimulation,
+        centerNodes
     });
 
-    // Обновляем ref при изменении simulationNodes
     useEffect(() => {
         simulationNodesRef.current = simulationNodes;
     }, [simulationNodes]);
